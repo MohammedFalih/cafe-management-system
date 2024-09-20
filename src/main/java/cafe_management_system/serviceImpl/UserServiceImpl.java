@@ -6,8 +6,13 @@ import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import cafe_management_system.JWT.CustomerUserDetailsService;
+import cafe_management_system.JWT.JwtUtil;
 import cafe_management_system.constants.CafeConstants;
 import cafe_management_system.dao.UserDao;
 import cafe_management_system.model.User;
@@ -21,6 +26,15 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     UserDao userDao;
+
+    @Autowired
+    AuthenticationManager authenticationManager;
+
+    @Autowired
+    JwtUtil jwtUtil;
+
+    @Autowired
+    CustomerUserDetailsService customerUserDetailsService;
 
     @Override
     public ResponseEntity<String> signUp(Map<String, String> requestMap) {
@@ -50,6 +64,31 @@ public class UserServiceImpl implements UserService {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public ResponseEntity<String> login(Map<String, String> requestMap) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(requestMap.get("email"), requestMap.get("password")));
+
+            if (authentication.isAuthenticated()) {
+                if (customerUserDetailsService.getUserDetails().getStatus().equalsIgnoreCase("true")) {
+                    return new ResponseEntity<String>(
+                            "{\"token\":\"" + jwtUtil.generateToken(
+                                    customerUserDetailsService.getUserDetails().getEmail(),
+                                    customerUserDetailsService.getUserDetails().getRole()) + "\"}",
+                            HttpStatus.OK);
+                } else {
+                    return new ResponseEntity<String>("{\"message\":\"Wait for admin's approval.\"}",
+                            HttpStatus.BAD_REQUEST);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ResponseEntity<String>("{\"message\":\"Bad credentials.\"}",
+                            HttpStatus.BAD_REQUEST);
     }
 
     private User getUserFromMap(Map<String, String> request) {
