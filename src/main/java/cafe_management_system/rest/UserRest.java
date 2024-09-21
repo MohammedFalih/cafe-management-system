@@ -1,11 +1,15 @@
 package cafe_management_system.rest;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+
+import cafe_management_system.wrapper.UserWrapper;
 
 @RequestMapping("/user")
 public interface UserRest {
@@ -15,4 +19,10 @@ public interface UserRest {
 
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody Map<String, String> request);
+
+    @GetMapping("/get")
+    public ResponseEntity<List<UserWrapper>> getAllUser();
+
+    @PostMapping("/update")
+    public ResponseEntity<String> update(@RequestBody Map<String, String> request);
 }

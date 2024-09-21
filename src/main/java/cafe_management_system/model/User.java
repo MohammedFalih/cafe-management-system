@@ -16,7 +16,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@NamedQuery(name = "User.findByEmailId", query = "select u from User u where u.email=:email")
+@NamedQuery(name = "User.getAllUser", query = "select new cafe_management_system.wrapper.UserWrapper(u.id, u.name, u.email, u.contactNumber, u.password, u.status) from User u where u.role='user'")
+
+@NamedQuery(name = "User.update", query = "update User u set u.status=:status where u.id=:id")
 
 @Data
 @AllArgsConstructor

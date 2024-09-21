@@ -23,37 +23,6 @@ public class JwtUtil {
 
     private String secret_key = "";
 
-    public String extractUserName(String token) {
-        return extractClaims(token, Claims::getSubject);
-    }
-
-    public Date extractExpiration(String token) {
-        return extractClaims(token, Claims::getExpiration);
-    }
-
-    public <T> T extractClaims(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
-    }
-
-    public Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-    }
-
-    private Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
-    public String generateToken(String username, String role) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("role", role);
-        return createToken(claims, username);
-    }
-
     public JwtUtil() {
         KeyGenerator keyGen;
         try {
@@ -83,9 +52,40 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
+    public <T> T extractClaims(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+    public Claims extractAllClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+    public Date extractExpiration(String token) {
+        return extractClaims(token, Claims::getExpiration);
+    }
+
+    public String extractUserName(String token) {
+        return extractClaims(token, Claims::getSubject);
+    }
+
+    private Boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
+    }
+
+    public String generateToken(String username, String role) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+        return createToken(claims, username);
+    }
+
     public Boolean validateToken(String token, UserDetails userdetails) {
         final String username = extractUserName(token);
-        return (username.equals(userdetails.getUsername()) && isTokenExpired(token));
+        return (username.equals(userdetails.getUsername()) && !isTokenExpired(token));
     }
 
 }
