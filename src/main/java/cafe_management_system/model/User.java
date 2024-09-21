@@ -20,6 +20,8 @@ import lombok.NoArgsConstructor;
 
 @NamedQuery(name = "User.update", query = "update User u set u.status=:status where u.id=:id")
 
+@NamedQuery(name = "User.getAllAdmin", query = "select u.email from User u where u.role='admin'")
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

@@ -24,6 +24,7 @@ import cafe_management_system.dao.UserDao;
 import cafe_management_system.model.User;
 import cafe_management_system.service.UserService;
 import cafe_management_system.utils.CafeUtils;
+import cafe_management_system.utils.EmailUtils;
 import cafe_management_system.wrapper.UserWrapper;
 import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +47,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     CustomerUserDetailsService customerUserDetailsService;
+
+    @Autowired
+    EmailUtils emailUtils;
 
     @Override
     public ResponseEntity<String> signUp(Map<String, String> requestMap) {
@@ -143,6 +147,7 @@ public class UserServiceImpl implements UserService {
                 Optional<User> optional = userDao.findById(Integer.parseInt(requestMap.get("id")));
                 if (!optional.isEmpty()) {
                     userDao.update(requestMap.get("status"), Integer.parseInt(requestMap.get("id")));
+                    sendToAllAdmin(requestMap.get("status"), optional.get().getEmail(), userDao.getAllAdmin());
                     return CafeUtils.getResponseEntity("User status updates Successfull", HttpStatus.OK);
                 }
             } else {
@@ -152,6 +157,15 @@ public class UserServiceImpl implements UserService {
             e.printStackTrace();
         }
         return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    private void sendToAllAdmin(String status, String user, List<String> allAdmin) {
+        allAdmin.remove(jwtFilter.getCurrentUser());
+        if (status != null && status.equalsIgnoreCase("true")) {
+            emailUtils.sendSimpleMessage(jwtFilter.getCurrentUser(), "Account Approved", "User:- " + user + " \n is approved by \nAdmin:-" + jwtFilter.getCurrentUser(), allAdmin);
+        } else {
+            emailUtils.sendSimpleMessage(jwtFilter.getCurrentUser(), "Account Disabled", "User:- " + user + " \n is disabled by \nAdmin:-" + jwtFilter.getCurrentUser(), allAdmin);
+        }
     }
 
 }
