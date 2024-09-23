@@ -16,7 +16,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@NamedQuery(name = "Category.getAllCategory", query = "select c from Category c")
+@NamedQuery(name = "Category.getAllCategory", query = "select c from Category c where c.id in (select p.category.id from Product p where p.status='true')")
 
 @Data
 @AllArgsConstructor
@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
 @DynamicUpdate
 @DynamicInsert
 @Table(name = "category")
-public class Category implements Serializable{
+public class Category implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

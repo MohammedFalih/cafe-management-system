@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,8 +16,9 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 import org.hibernate.annotations.DynamicUpdate;
-
 import org.hibernate.annotations.DynamicInsert;
+
+@NamedQuery(name = "Product.getAllProduct", query = "select new cafe_management_system.wrapper.ProductWrapper(p.id, p.name, p.description, p.price, p.status, p.category.id, p.category.name) from Product p")
 
 @Data
 @Entity
