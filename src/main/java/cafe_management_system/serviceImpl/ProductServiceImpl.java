@@ -35,19 +35,79 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     JwtUtil jwtUtil;
 
+    private Claims getClaimsFromToken() {
+        String token = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+                .getRequest().getHeader("Authorization").substring(7);
+        return jwtUtil.extractAllClaims(token);
+    }
+
+    private boolean isAdmin(Claims claims) {
+        return jwtFilter.isAdmin(claims);
+    }
+
     @Override
     public ResponseEntity<String> addNewProduct(Map<String, String> request) {
+        Claims claims = getClaimsFromToken();
 
-        String token = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest()
-                .getHeader("Authorization").substring(7);
-        Claims claims = jwtUtil.extractAllClaims(token);
+        if (!isAdmin(claims)) {
+            return CafeUtils.getResponseEntity(CafeConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
+        }
 
+        if (validateProductMap(request, false)) {
+            productDao.save(getFromProductMap(request, false));
+            return CafeUtils.getResponseEntity("Product added successfully", HttpStatus.OK);
+        }
+
+        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Override
+    public ResponseEntity<String> updateProduct(Map<String, String> request) {
+        Claims claims = getClaimsFromToken();
+
+        if (!isAdmin(claims)) {
+            return CafeUtils.getResponseEntity(CafeConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
+        }
+
+        Optional<Product> productOpt = productDao.findById(Integer.parseInt(request.get("id")));
+        if (productOpt.isPresent()) {
+            Product product = getFromProductMap(request, true);
+            product.setStatus(productOpt.get().getStatus());
+            productDao.save(product);
+            return CafeUtils.getResponseEntity("Product updated successfully", HttpStatus.OK);
+        }
+
+        return CafeUtils.getResponseEntity("Product Id doesn't exist", HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<String> deleteProduct(Integer id) {
+        Claims claims = getClaimsFromToken();
+
+        if (!isAdmin(claims)) {
+            return CafeUtils.getResponseEntity(CafeConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
+        }
+
+        Optional<Product> optional = productDao.findById(id);
+        if (optional.isPresent()) {
+            productDao.deleteById(id);
+            return CafeUtils.getResponseEntity("Product deleted successfully", HttpStatus.OK);
+        }
+
+        return CafeUtils.getResponseEntity("Product Id doesn't exist", HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<String> updateStatus(Map<String, String> request) {
+        Claims claims = getClaimsFromToken();
         try {
-            if (jwtFilter.isAdmin(claims)) {
-                if (validateProductMap(request, false)) {
-                    productDao.save(getFromProductMap(request, false));
-                    return CafeUtils.getResponseEntity("Product added successfully", HttpStatus.OK);
+            if (isAdmin(claims)) {
+                Optional<Product> optional = productDao.findById(Integer.parseInt(request.get("id")));
+                if (!optional.isEmpty()) {
+                    productDao.updateProductStatus(request.get("status"), Integer.parseInt(request.get("id")));
+                    return CafeUtils.getResponseEntity("Product status updated successfully", HttpStatus.OK);
                 }
+                return CafeUtils.getResponseEntity("Product Id doesn't exists.", HttpStatus.OK);
             } else {
                 return CafeUtils.getResponseEntity(CafeConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
             }
@@ -58,28 +118,28 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ResponseEntity<String> updateProduct(Map<String, String> request) {
-
-        String token = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest()
-                .getHeader("Authorization").substring(7);
-        Claims claims = jwtUtil.extractAllClaims(token);
-
+    public ResponseEntity<List<ProductWrapper>> getByCategory(Integer id) {
         try {
-            if (jwtFilter.isAdmin(claims)) {
-                Optional<Product> productOpt = productDao.findById(Integer.parseInt(request.get("id")));
-                if (!productOpt.isEmpty()) {
-                    Product product = getFromProductMap(request, true);
-                    product.setStatus(productOpt.get().getStatus());
-                    productDao.save(product);
-                    return CafeUtils.getResponseEntity("Product updated Successfully", HttpStatus.OK);
-                }
-            } else{
-                return CafeUtils.getResponseEntity(CafeConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(productDao.getProductsByCategory(id), HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ResponseEntity<>(new ArrayList<>(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Override
+    public ResponseEntity<ProductWrapper> getProductById(Integer id) {
+        try {
+            ProductWrapper productWrapper = productDao.findProductById(id);
+            if (productWrapper != null) {
+                return new ResponseEntity<>(productWrapper, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(new ProductWrapper(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private boolean validateProductMap(Map<String, String> request, boolean validateToken) {
