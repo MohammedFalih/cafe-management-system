@@ -1,16 +1,25 @@
 package cafe_management_system.serviceImpl;
 
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
+import java.io.File;
+import java.io.FileInputStream;
 
 import com.itextpdf.text.Element;
 
+import org.apache.pdfbox.io.IOUtils;
 import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
@@ -25,11 +34,13 @@ import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 
 import cafe_management_system.JWT.JwtFilter;
+import cafe_management_system.JWT.JwtUtil;
 import cafe_management_system.constants.CafeConstants;
 import cafe_management_system.dao.BillDao;
 import cafe_management_system.model.Bill;
 import cafe_management_system.service.BillService;
 import cafe_management_system.utils.CafeUtils;
+import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -41,6 +52,19 @@ public class BillServiceImpl implements BillService {
 
     @Autowired
     BillDao billDao;
+
+    @Autowired
+    JwtUtil jwtUtil;
+
+    private Claims getClaimsFromToken() {
+        String token = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+                .getRequest().getHeader("Authorization").substring(7);
+        return jwtUtil.extractAllClaims(token);
+    }
+
+    private boolean isAdmin(Claims claims) {
+        return jwtFilter.isAdmin(claims);
+    }
 
     @Override
     public ResponseEntity<String> generateReport(Map<String, Object> request) {
@@ -64,7 +88,6 @@ public class BillServiceImpl implements BillService {
                 // new FileOutputStream(CafeConstants.SAVE_LOCATION + "\\" + fileName +
                 // ".pdf"));
 
-                 
                 Document document = new Document();
                 String fullPath = CafeConstants.SAVE_LOCATION + "/" + fileName + ".pdf";
                 System.out.println("Saving PDF to: " + fullPath);
@@ -184,6 +207,56 @@ public class BillServiceImpl implements BillService {
                 request.containsKey("paymentMethod") &&
                 request.containsKey("productDetails") &&
                 request.containsKey("totalAmount");
+    }
+
+    @Override
+    public ResponseEntity<List<Bill>> getBills() {
+
+        List<Bill> list = new ArrayList<>();
+        Claims claims = this.getClaimsFromToken();
+
+        try {
+            if (this.isAdmin(claims)) {
+                list = billDao.getAllBills();
+            } else {
+                list = billDao.getBillByUserName(jwtFilter.getCurrentUser());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ResponseEntity<>(list, HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<byte[]> getPdf(Map<String, Object> request) {
+        log.info("getPdf() method" + request);
+        try {
+            byte[] byteArray = new byte[0];
+            if (!request.containsKey("uuid") && validateRequestMap(request)) {
+                return new ResponseEntity<>(byteArray, HttpStatus.BAD_REQUEST);
+            }
+            String filePath = CafeConstants.SAVE_LOCATION + "/" + (String) request.get("uuid") + ".pdf";
+            if (CafeUtils.isFileExist(filePath)) {
+                byteArray = getByteArray(filePath);
+                return new ResponseEntity<>(byteArray, HttpStatus.OK);
+            } else {
+                request.put("isGenerate", false);
+                generateReport(request);
+                byteArray = getByteArray(filePath);
+                return new ResponseEntity<>(byteArray, HttpStatus.OK);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private byte[] getByteArray(String filePath) throws IOException {
+        File initialFile = new File(filePath);
+        InputStream targetStream = new FileInputStream(initialFile);
+        byte[] byteArray = IOUtils.toByteArray(targetStream);
+        targetStream.close();
+        return byteArray;
     }
 
 }
