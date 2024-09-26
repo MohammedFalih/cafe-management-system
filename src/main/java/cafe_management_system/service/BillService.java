@@ -15,5 +15,6 @@ public interface BillService {
 
     ResponseEntity<byte[]> getPdf(Map<String, Object> request);
 
+    ResponseEntity<String> deleteBill(Integer id);
 
 }

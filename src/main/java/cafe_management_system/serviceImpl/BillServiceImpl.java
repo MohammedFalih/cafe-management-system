@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -257,6 +258,22 @@ public class BillServiceImpl implements BillService {
         byte[] byteArray = IOUtils.toByteArray(targetStream);
         targetStream.close();
         return byteArray;
+    }
+
+    @Override
+    public ResponseEntity<String> deleteBill(Integer id) {
+        try {
+            @SuppressWarnings("rawtypes")
+            Optional billDeletion = billDao.findById(id);
+            if (!billDeletion.isEmpty()) {
+                billDao.deleteById(id);
+                return CafeUtils.getResponseEntity("Bill deleted successfully.", HttpStatus.OK);
+            }
+            return CafeUtils.getResponseEntity("Bill Id doesn't exists", HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
 }
