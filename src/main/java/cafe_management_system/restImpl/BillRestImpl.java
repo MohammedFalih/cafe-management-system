@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RestController;
 
 import cafe_management_system.constants.CafeConstants;
@@ -15,6 +16,7 @@ import cafe_management_system.service.BillService;
 import cafe_management_system.utils.CafeUtils;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:4200")
 public class BillRestImpl implements BillRest {
 
     @Autowired
