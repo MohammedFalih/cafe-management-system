@@ -64,7 +64,7 @@ public class SecurityConfig implements WebMvcConfigurer {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(Arrays.asList("http://localhost:4200")); // Your Angular app's URL
+        config.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setAllowedMethods(Arrays.asList(HttpMethod.GET.name(), HttpMethod.POST.name(), HttpMethod.PUT.name(),
                 HttpMethod.DELETE.name(), HttpMethod.OPTIONS.name()));
