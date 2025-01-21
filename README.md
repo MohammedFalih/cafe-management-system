@@ -10,4 +10,5 @@ export NODE_OPTIONS=--openssl-legacy-provider
 
 
 ### 2. To Start the development server 
-  ```bash ng s
+  ```bash
+      ng s
