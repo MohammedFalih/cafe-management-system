@@ -6,6 +6,7 @@ To run the development server for your Angular application, follow these steps:
 
 If you're using Node.js version 17 or later, you'll need to enable legacy OpenSSL support to avoid compatibility issues. Run the following command in your terminal:
 
+```bash
 export NODE_OPTIONS=--openssl-legacy-provider
 
 
