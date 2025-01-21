@@ -8,6 +8,7 @@ If you're using Node.js version 17 or later, you'll need to enable legacy OpenSS
 
 ```bash
 export NODE_OPTIONS=--openssl-legacy-provider
+```
 
 
 ### 2. To Start the development server 
